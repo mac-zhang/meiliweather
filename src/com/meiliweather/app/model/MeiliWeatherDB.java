@@ -54,7 +54,7 @@ public class MeiliWeatherDB {
 	}
 	
 	/**
-	 * 从数据库读取全国所有的身份信息
+	 * 从数据库读取全国所有的省份信息
 	 */
 	public List<Province> loadProvinces(){
 		List<Province> list	= new ArrayList<Province>();
@@ -74,4 +74,77 @@ public class MeiliWeatherDB {
 		return list;
 		
 	}
+	
+	/**
+	 * 将City实例存储到数据库
+	 */
+	public void saveCity(City city){
+		if(city != null){
+			ContentValues values = new ContentValues();
+			values.put("city_name", city.GetCityName());
+			values.put("city_code", city.GetCityCode());
+			values.put("province_id", city.GetProvinceId());
+			db.insert("City", null, values);
+		}
+	}
+	
+	/**
+	 * 从数据库读取某省下所有城市的信息
+	 */
+	public List<City> loadCity(int provinceId){
+		List<City> list	= new ArrayList<City>();
+		Cursor cursor = db
+				.query("City", null, "province_id = ?", new String[]{String.valueOf(provinceId)}, null, null, null);
+		if(cursor.moveToFirst()){
+			do{
+				City city	= new City();
+				city.SetId(cursor.getInt(cursor.getColumnIndex("id")));
+				city.SetCityName(cursor.getString(cursor.getColumnIndex("city_name")));
+				city.SetCityCode(cursor.getString(cursor.getColumnIndex("city_code")));
+				city.SetProvinceId(provinceId);
+				list.add(city);
+			}while(cursor.moveToNext());
+		}
+		if(cursor != null)
+			cursor.close();
+		return list;
+		
+	}
+	
+	/**
+	 * 将Country实例存储到数据库
+	 */
+	public void saveCountry(Country country){
+		if(country != null){
+			ContentValues values = new ContentValues();
+			values.put("country_name", country.GetCountryName());
+			values.put("country_code", country.GetCountryCode());
+			values.put("city_id", country.GetCityId());
+			db.insert("Country", null, values);
+		}
+	}
+	
+	/**
+	 * 从数据库读取某城市下所有县的信息
+	 */
+	public List<Country> loadCountries(int cityId){
+		List<Country> list	= new ArrayList<Country>();
+		Cursor cursor = db
+				.query("Country", null, "city_id = ?", new String[]{String.valueOf(cityId)}, null, null, null);
+		if(cursor.moveToFirst()){
+			do{
+				Country country	= new Country();
+				country.SetId(cursor.getInt(cursor.getColumnIndex("id")));
+				country.SetCountryName(cursor.getString(cursor.getColumnIndex("country_name")));
+				country.SetCountryCode(cursor.getString(cursor.getColumnIndex("country_code")));
+				country.SetCityId(cityId);
+				list.add(country);
+			}while(cursor.moveToNext());
+		}
+		if(cursor != null)
+			cursor.close();
+		return list;
+		
+	}
+	
 }
