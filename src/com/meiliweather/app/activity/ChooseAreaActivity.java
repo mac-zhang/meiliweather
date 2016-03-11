@@ -1,13 +1,17 @@
 package com.meiliweather.app.activity;
 
-import java.security.PublicKey;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 
 import com.meiliweather.app.model.City;
 import com.meiliweather.app.model.Country;
 import com.meiliweather.app.model.MeiliWeatherDB;
 import com.meiliweather.app.model.Province;
+import com.meiliweather.app.util.HttpCallbackListener;
+import com.meiliweather.app.util.HttpUtil;
+import com.meiliweather.app.util.Utility;
 
 import android.R;
 import android.R.anim;
@@ -15,12 +19,14 @@ import android.R.integer;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class ChooseAreaActivity extends Activity{
 	public static final int PROVINCE_LEVEL	= 0;
@@ -58,11 +64,161 @@ public class ChooseAreaActivity extends Activity{
 					queryCities();
 				}else if(currentLevel == CITY_LEVEL){
 					selectedCity		= cityList.get(index);
-					queryCountry();
+					queryCountries();
 				}
 			}
 		});
-		quetyProvinces();
+		queryProvinces();
 	}
 	
+	/**
+	 * 查询全国所有的省，优先从数据库查询，如果没有查询到再去服务器上查询
+	 */
+	private void queryProvinces(){
+		provinceList = meiliWeatherDB.loadProvinces();
+		if(provinceList.size()>0){
+			dataList.clear();
+			for(Province province : provinceList){
+				dataList.add(province.GetProvinceName());
+			}
+			adapter.notifyDataSetChanged();
+			listView.setSelection(0);
+			titleText.setText("中国");
+			currentLevel	= PROVINCE_LEVEL;
+		}else{
+			queryFromServer(null, "province");
+		}
+	}
+	
+	/**
+	 * 查询选中省内的城市，优先从数据库查询，如果没有查询到再去服务器上查询
+	 */
+	private void queryCities(){
+		cityList = meiliWeatherDB.loadCity(selectedProvince.GetId());
+		if(cityList.size()>0){
+			dataList.clear();
+			for(City city : cityList){
+				dataList.add(city.GetCityName());
+			}
+			adapter.notifyDataSetChanged();
+			listView.setSelection(0);
+			titleText.setText(selectedProvince.GetProvinceName());
+			currentLevel	= CITY_LEVEL;
+		}else{
+			queryFromServer(selectedProvince.GetProvinceCode(), "city");
+		}
+	}
+	
+	/**
+	 * 查询选中市内所有的县，优先从数据库查询，如果没有查询到再去服务器上查询
+	 */
+	private void queryCountries(){
+		countryList = meiliWeatherDB.loadCountries(selectedCity.GetId());
+		if(countryList.size()>0){
+			dataList.clear();
+			for(Country country : countryList){
+				dataList.add(country.GetCountryName());
+			}
+			adapter.notifyDataSetChanged();
+			listView.setSelection(0);
+			titleText.setText(selectedCity.GetCityName());
+			currentLevel	= CONTEXT_RESTRICTED;
+		}else{
+			queryFromServer(selectedCity.GetCityCode(), "country");
+		}
+	}
+	
+	/**
+	 * 根据传入的代号和类型从服务器上查询省市县数据
+	 */
+	private void queryFromServer(final String code, final String type){
+		String	address;
+		if(!TextUtils.isEmpty(code)){
+			address = "http://www.weather.com.cn/data/list3/city" + code + ".xml";
+		}else{
+			address = "http://www.weather.com.cn/data/list3/city.xml";
+		}
+		showProgressDialog();
+		HttpUtil.sendHttpRequest(address, new HttpCallbackListener() {
+			
+			@Override
+			public void onFinish(String response){
+				boolean result = false;
+				if("province".equals(type)){
+					result = Utility.handleProvincesResponse(meiliWeatherDB, response);
+				}else if("city".equals(type)){
+					result = Utility.handleCityResponse(meiliWeatherDB, response, selectedProvince.GetId());
+				}else if("country".equals(type)){
+					result = Utility.handleCountryResponse(meiliWeatherDB, response, selectedCity.GetId());
+				}
+			}
+			
+			if(result){
+				runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						closeProgressDialog();
+						if("province".equals(type)){
+							queryProvinces();
+						}else if("city".equals(type)){
+							queryCities();
+						}else if("country".equals(type)){
+							queryCountries();
+						}
+						
+					}
+				});
+			}
+			
+			@Override
+			public void onError(Exception e) {
+				runOnUiThread(new Runnable() {
+					
+					@Override
+					public void run() {
+						closeProgressDialog();
+						Toast.makeText(ChooseAreaActivity.this, "加载失败", Toast.LENGTH_SHORT).show();
+						
+					}
+				});
+				
+			}
+		});
+	}
+	
+	/**
+	 * 显示进度对话框
+	 */
+	private void showProgressDialog(){
+		if(progressDialog == null){
+			progressDialog = new ProgressDialog(this);
+			progressDialog.setMessage("网络正在加载...")；
+			progressDialog.setCanceledOnTouchOutside(false);
+			
+		}
+		progressDialog.show();
+	}
+	
+	/**
+	 * 关闭进度对话框
+	 */
+	private void closeProgressDialog(){
+		if(progressDialog != null){
+			progressDialog.dismiss();
+		}
+	}
+	
+	/**
+	 * 捕获mBack键，根据当前的级别来判断
+	 */
+	@Override
+	public void onBackPressed() {
+		if(currentLevel == COUNTRY_LEVEL){
+			queryCities();
+		}else if(currentLevel == CITY_LEVEL){
+			queryProvinces();
+		}else{
+			finish();
+		}
+	}
 }
