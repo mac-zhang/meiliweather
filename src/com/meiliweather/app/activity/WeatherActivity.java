@@ -1,21 +1,24 @@
 package com.meiliweather.app.activity;
 
+import com.meiliweather.app.service.AutoUpdateService;
 import com.meiliweather.app.util.HttpCallbackListener;
 import com.meiliweather.app.util.HttpUtil;
 import com.meiliweather.app.util.Utility;
 
-import android.R;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.Window;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-public class WeatherActivity extends Activity{
+public class WeatherActivity extends Activity implements OnClickListener{
 	private LinearLayout weatherInfoLayout;
 	private TextView	 cityNameText;
 	private TextView	publishText;
@@ -23,6 +26,8 @@ public class WeatherActivity extends Activity{
 	private TextView	temp1Text;
 	private TextView	temp2Text;
 	private TextView	currentDateText;
+	private Button		switchCity;
+	private Button		updateWeather;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +42,12 @@ public class WeatherActivity extends Activity{
 		temp1Text	= (TextView) findViewById(com.meiliweather.app.R.id.temp1);
 		temp2Text	= (TextView) findViewById(com.meiliweather.app.R.id.temp2);
 		currentDateText	= (TextView) findViewById(com.meiliweather.app.R.id.current_date);
+		switchCity	= (Button) findViewById(com.meiliweather.app.R.id.switch_city);
+		updateWeather	= (Button) findViewById(com.meiliweather.app.R.id.update_weaher);
+		
+		switchCity.setOnClickListener(this);
+		updateWeather.setOnClickListener(this);
+		
 		String countryCode = getIntent().getStringExtra("country_code");
 		if(!TextUtils.isEmpty(countryCode)){
 			publishText.setText("天气数据同步中...");
@@ -122,5 +133,31 @@ public class WeatherActivity extends Activity{
 		currentDateText.setText(prefs.getString("current_date", ""));
 		weatherInfoLayout.setVisibility(View.VISIBLE);
 		cityNameText.setVisibility(View.VISIBLE);
+		
+		Intent intent = new Intent(this, AutoUpdateService.class);
+		startActivity(intent);
+	}
+
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()){
+			case com.meiliweather.app.R.id.switch_city:
+				Intent intent = new Intent(this, ChooseAreaActivity.class);
+				intent.putExtra("from_weather_activity", true);
+				startActivity(intent);
+				finish();
+				break;
+			case com.meiliweather.app.R.id.update_weaher:
+				publishText.setText("天气数据同步中...");
+				SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+				String weatherCode = prefs.getString("weather_code", "");
+				if(!TextUtils.isEmpty(weatherCode)){
+					queryWeatherInfo(weatherCode);
+				}
+				break;
+			default:
+				break;
+		}
+		
 	}
 }

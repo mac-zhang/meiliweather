@@ -1,9 +1,7 @@
 package com.meiliweather.app.activity;
 
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 
 import com.meiliweather.app.model.City;
 import com.meiliweather.app.model.Country;
@@ -13,9 +11,6 @@ import com.meiliweather.app.util.HttpCallbackListener;
 import com.meiliweather.app.util.HttpUtil;
 import com.meiliweather.app.util.Utility;
 
-import android.R;
-import android.R.anim;
-import android.R.integer;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
@@ -38,7 +33,7 @@ public class ChooseAreaActivity extends Activity{
 	public static final int COUNTRY_LEVEL	= 2;
 	
 	private ProgressDialog			progressDialog;
-	private TextView				textView;
+	private TextView				titleText;
 	private ListView				listView;
 	private ArrayAdapter<String> 	adapter;
 	private MeiliWeatherDB			meiliWeatherDB;
@@ -50,14 +45,16 @@ public class ChooseAreaActivity extends Activity{
 	private Province				selectedProvince;
 	private City					selectedCity;
 	private int						currentLevel;
+	private boolean 				isFromWeatherActivity;
 	
-		
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		// TODO Auto-generated method stub
-		super.onCreate(savedInstanceState);	
+		super.onCreate(savedInstanceState);
+		
+		isFromWeatherActivity = getIntent().getBooleanExtra("from_weather_activity", false);
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-		if(prefs.getBoolean("city_selected", false)){
+		if(prefs.getBoolean("city_selected", false) && !isFromWeatherActivity){
 			Intent intent = new Intent(ChooseAreaActivity.this, WeatherActivity.class);
 			startActivity(intent);
 			finish();
@@ -67,13 +64,14 @@ public class ChooseAreaActivity extends Activity{
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(com.meiliweather.app.R.layout.choose_area);
 		listView = (ListView)findViewById(com.meiliweather.app.R.id.list_view);
-		textView = (TextView)findViewById(com.meiliweather.app.R.id.title_text);
+		titleText = (TextView)findViewById(com.meiliweather.app.R.id.title_text);
 		adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, dataList);
 		listView.setAdapter(adapter);
 		meiliWeatherDB = MeiliWeatherDB.getInstance(this);
 		
-		listView.setOnClickListener(new OnItemClickListener()){
-			public void OnItemClickListener(AdapterView<?>arg0, View view, int index, long arg3){
+		listView.setOnItemClickListener(new OnItemClickListener(){
+			@Override
+			public void onItemClick(AdapterView<?>arg0, View view, int index, long arg3) {
 				if(currentLevel == PROVINCE_LEVEL){
 					selectedProvince 	= provinceList.get(index);
 					queryCities();
@@ -87,6 +85,7 @@ public class ChooseAreaActivity extends Activity{
 					startActivity(intent);
 					finish();
 				}
+				
 			}
 		});
 		queryProvinces();
@@ -172,24 +171,25 @@ public class ChooseAreaActivity extends Activity{
 				}else if("country".equals(type)){
 					result = Utility.handleCountryResponse(meiliWeatherDB, response, selectedCity.GetId());
 				}
-			}
-			
-			if(result){
-				runOnUiThread(new Runnable() {
-					@Override
-					public void run() {
-						closeProgressDialog();
-						if("province".equals(type)){
-							queryProvinces();
-						}else if("city".equals(type)){
-							queryCities();
-						}else if("country".equals(type)){
-							queryCountries();
-						}
 						
-					}
-				});
+				if(result){
+					runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							closeProgressDialog();
+							if("province".equals(type)){
+								queryProvinces();
+							}else if("city".equals(type)){
+								queryCities();
+							}else if("country".equals(type)){
+								queryCountries();
+							}
+							
+						}
+					});
+				}
 			}
+						
 			
 			@Override
 			public void onError(Exception e) {
@@ -238,9 +238,11 @@ public class ChooseAreaActivity extends Activity{
 		}else if(currentLevel == CITY_LEVEL){
 			queryProvinces();
 		}else{
+			if(isFromWeatherActivity){
+				Intent intent = new Intent(this, WeatherActivity.class);
+				startActivity(intent);
+			}
 			finish();
 		}
 	}
-	
-	
 }
