@@ -6,8 +6,7 @@ import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
 
 public class MeiliWeatherOpenHelper extends SQLiteOpenHelper{
-	public MeiliWeatherOpenHelper(Context context, String name,
-			CursorFactory factory, int version) {
+	public MeiliWeatherOpenHelper(Context context, String name, CursorFactory factory, int version) {
 		super(context, name, factory, version);
 		
 	}

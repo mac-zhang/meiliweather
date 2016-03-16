@@ -18,6 +18,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
@@ -50,16 +51,19 @@ public class ChooseAreaActivity extends Activity{
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
+		
+		super.onCreate(savedInstanceState);		
+		Log.d("zmc", "Getin");
 		
 		isFromWeatherActivity = getIntent().getBooleanExtra("from_weather_activity", false);
 		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		if(prefs.getBoolean("city_selected", false) && !isFromWeatherActivity){
-			Intent intent = new Intent(ChooseAreaActivity.this, WeatherActivity.class);
+			Intent intent = new Intent(this, WeatherActivity.class);
 			startActivity(intent);
 			finish();
 			return;
 		}
+		
 		
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(com.meiliweather.app.R.layout.choose_area);
@@ -142,7 +146,7 @@ public class ChooseAreaActivity extends Activity{
 			adapter.notifyDataSetChanged();
 			listView.setSelection(0);
 			titleText.setText(selectedCity.GetCityName());
-			currentLevel	= CONTEXT_RESTRICTED;
+			currentLevel	= COUNTRY_LEVEL;
 		}else{
 			queryFromServer(selectedCity.GetCityCode(), "country");
 		}

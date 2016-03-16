@@ -11,6 +11,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
@@ -63,7 +64,7 @@ public class WeatherActivity extends Activity implements OnClickListener{
 	 * @param countryCode
 	 */
 	private void queryWeatherCode(String countryCode){
-		String address = "http://www.weather.com.cn/data/list3/city"+countryCode+".html";
+		String address = "http://www.weather.com.cn/data/list3/city"+countryCode+".xml";
 		queryFromSever(address, "countryCode");
 	}
 	
@@ -82,7 +83,7 @@ public class WeatherActivity extends Activity implements OnClickListener{
 		HttpUtil.sendHttpRequest(address, new HttpCallbackListener() {
 			
 			@Override
-			public void onFinish(String response) {
+			public void onFinish(final String response) {
 				if("countryCode".equals(type)){
 					if(!TextUtils.isEmpty(response)){
 						String[] array = response.split("\\|");

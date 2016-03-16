@@ -11,6 +11,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.meiliweather.app.model.City;
 import com.meiliweather.app.model.Country;
@@ -83,6 +84,29 @@ public class Utility {
 		return	false;
 	}
 	
+		
+	/**
+	 * 解析服务器返回的JSON数据，并将数据存储到本地
+	 */
+	public static void handleWeatherRespon(Context context, String response){
+		try{
+			JSONObject jsonObject 	= new JSONObject(response);
+			JSONObject weatherInfo 	= jsonObject.getJSONObject("weatherinfo");
+			String cityName 		= weatherInfo.getString("city");
+			String weatherCode 		= weatherInfo.getString("cityid");
+			String temp1 			= weatherInfo.getString("temp1");
+			String temp2	 		= weatherInfo.getString("temp2");
+			String weatherDesp 		= weatherInfo.getString("weather");
+			String publishTime 		= weatherInfo.getString("ptime");
+//			Log.d("w1", cityName);
+//			Log.d("w1", temp1);
+//			Log.d("w1", weatherDesp);
+			saveWeatherInfo(context, cityName, weatherCode, temp1, temp2, weatherDesp, publishTime);
+		}catch (JSONException e){
+			e.printStackTrace();
+		}
+	}
+	
 	/**
 	 * 将服务器返回的所有天气信息存储到SharedPreferences文件
 	 */
@@ -99,24 +123,5 @@ public class Utility {
 		editor.putString("publish_time", publishTime);
 		editor.putString("current_date", sdf.format(new Date()));
 		editor.commit();
-	}
-	
-	/**
-	 * 解析服务器返回的JSON数据，并将数据存储到本地
-	 */
-	public static void handleWeatherRespon(Context context, String respon){
-		try{
-			JSONObject jsonObject 	= new JSONObject();
-			JSONObject weatherInfo 	= jsonObject.getJSONObject("weatherinfo");
-			String cityName 		= weatherInfo.getString("city");
-			String weatherCode 		= weatherInfo.getString("cityid");
-			String temp1 			= weatherInfo.getString("temp1");
-			String temp2	 		= weatherInfo.getString("temp2");
-			String weatherDesp 		= weatherInfo.getString("weather");
-			String publishTime 		= weatherInfo.getString("ptime");
-			saveWeatherInfo(context, cityName, weatherCode, temp1, temp2, weatherDesp, publishTime);
-		}catch (JSONException e){
-			e.printStackTrace();
-		}
 	}
 }
